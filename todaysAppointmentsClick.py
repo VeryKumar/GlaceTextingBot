@@ -1,16 +1,13 @@
 from selenium import webdriver
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
-
 from webdriver_manager.chrome import ChromeDriverManager
-
 import time
+import config
  
 driver = webdriver.Chrome(ChromeDriverManager().install())
 
 driver.get("https://asp.glaceemr.com/Glace/jsp/loginPage.jsp")
-
 
 # text method is used in python to retrieve the text of WebElement
 # login to portal
@@ -18,9 +15,9 @@ userInput = driver.find_element(By.ID, "txtUserName" )
 userPass = driver.find_element(By.ID, "txtPWord")
 accountInput = driver.find_element(By.ID, "accountID")
 
-userInput.send_keys("")
-userPass.send_keys("")
-accountInput.send_keys("eclinic")
+userInput.send_keys(config.USER)
+userPass.send_keys(config.PASSWORD)
+accountInput.send_keys(config.ACCOUNT_ID)
 submit = driver.find_element(By.ID, "SubmitButton")
 submit.click()
 

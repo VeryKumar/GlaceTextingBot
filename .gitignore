@@ -1,2 +1,5 @@
 # Ignore secrets
 config.py
+
+# Ignore cashed files
+__pycache__/
