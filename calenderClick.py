@@ -88,10 +88,44 @@ calClick = driver.find_element(
 
 wait(driver, timeout=10).until(EC.presence_of_element_located(
     (By.CSS_SELECTOR, "a[href*='2/2/2023']")))
-appointment = driver.find_element(
-    By.CSS_SELECTOR, f"a[href*='2/7/2023']").click()
-time.sleep(5)
 
+appointment = driver.find_element(
+    By.CSS_SELECTOR, f"a[href*='2/28/2023']")
+time.sleep(8)
+action.click(appointment).perform()
+time.sleep(8)
+
+# At appointment with provided date
+wait(driver, timeout=10).until(EC.presence_of_element_located(
+    (By.XPATH, "//span[contains(@id, 'appt')]")))
+
+patientsAtDate = driver.find_elements(
+    By.XPATH, "//span[contains(@id, 'appt')]")
+count = 0
+for patient in patientsAtDate:
+    action.double_click(patient).perform()
+    time.sleep(3)
+    patientName = driver.find_element(By.ID, "pat_name")
+    print("name", patientName.get_attribute('value'))
+    appointmentTme = driver.find_element(By.ID, "time")
+    print("time", appointmentTme.get_attribute('value'))
+    homephone = driver.find_element(By.ID, "phone_num")
+    print("home num", homephone.get_attribute('value'))
+    cellphone = driver.find_element(By.ID, "cellno")
+    print("cell num", cellphone.get_attribute('value'))
+    count += 1
+print("count:", count)
+
+
+# parent = appointment.find_element(By.XPATH, "./..")
+# parent.click()
+
+
+# js = f"Javascript:showAppointmentsforDayNavigator({'2/7/2023'});"
+# driver.execute_script(js)
+# driver.execute_async_script()
+
+# app_span = driver.find_element(By.XPATH, "//span[contains(@id, ')
 # wait(driver, timeout=5).until(EC.presence_of_element_located(
 #     (By.XPATH, f"//*[contains(@href, {DATE})]"))
 # )
@@ -111,7 +145,7 @@ time.sleep(5)
 # for appointment in appointments:
 #     if DATE in appointment.get_attribute("href"):
 #         print(f"Found {DATE}'s appointment")
-#         driver.execute_sc xript("arguments[0].click();", appointment)
+#         driver.execute_script("arguments[0].click();", appointment)
 #     else:
 #         print("not found")
 # find_appointment_by_date(appointments, DATE)
