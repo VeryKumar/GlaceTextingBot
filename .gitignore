@@ -1,5 +1,7 @@
 # Ignore secrets
 config.py
+gvoice.py
 
 # Ignore cashed files
 __pycache__/
+downloaded_files/driver_fixing.lock

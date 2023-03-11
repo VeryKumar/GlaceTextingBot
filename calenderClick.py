@@ -5,18 +5,26 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import StaleElementReferenceException
+from seleniumbase import SB
 import time
 import config
+import gvoice
 
-# Initialize driver
-url = "https://asp.glaceemr.com/Glace/jsp/loginPage.jsp"
-driver = webdriver.Chrome(ChromeDriverManager().install())
-driver.get(url)
 
 # Set appiontment date
 DATE = '2/2/2023'
 
+# Initialize driver
+# url = "https://asp.glaceemr.com/Glace/jsp/loginPage.jsp"
+# driver = webdriver.Chrome(ChromeDriverManager().install())
+# driver.get(url)
+
+# Patients Array
+
+patients = []
+'''
 # Helper methods
+
 # Explicit Wait
 
 
@@ -69,7 +77,8 @@ action.move_to_element(scheduleBtn).perform()
 calendarBtn = driver.find_element(
     By.XPATH, "/html/body/div[18]/div/table/tbody/tr[1]")
 calendarBtn.click()
-appointmentUrl = f"javascript:todaysAppointmentNew({DATE});"
+
+# appointmentUrl = f"javascript:todaysAppointmentNew({DATE});"
 # driver.find_element(By.XPATH, '//a[@href="'+appointmentUrl+'"]').click()
 # print(appointmentUrl)
 # driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
@@ -87,10 +96,10 @@ calClick = driver.find_element(
     By.CSS_SELECTOR, "a[title*='Appointments']").click()
 
 wait(driver, timeout=10).until(EC.presence_of_element_located(
-    (By.CSS_SELECTOR, "a[href*='2/2/2023']")))
+    (By.CSS_SELECTOR, "a[href*='3/2/2023']")))
 
 appointment = driver.find_element(
-    By.CSS_SELECTOR, f"a[href*='2/28/2023']")
+    By.CSS_SELECTOR, f"a[href*='3/28/2023']")
 time.sleep(8)
 action.click(appointment).perform()
 time.sleep(8)
@@ -101,54 +110,70 @@ wait(driver, timeout=10).until(EC.presence_of_element_located(
 
 patientsAtDate = driver.find_elements(
     By.XPATH, "//span[contains(@id, 'appt')]")
+
 count = 0
+
 for patient in patientsAtDate:
+    patientDict = {}
+
     action.double_click(patient).perform()
     time.sleep(3)
+
     patientName = driver.find_element(By.ID, "pat_name")
+    patientDict["name"] = patientName.get_attribute('value')
     print("name", patientName.get_attribute('value'))
+
     appointmentTme = driver.find_element(By.ID, "time")
     print("time", appointmentTme.get_attribute('value'))
+    patientDict["time"] = appointmentTme.get_attribute('value')
+
     homephone = driver.find_element(By.ID, "phone_num")
     print("home num", homephone.get_attribute('value'))
-    cellphone = driver.find_element(By.ID, "cellno")
+    patientDict["homephone"] = homephone.get_attribute('value')
+
+    cellphone = driver.find_element(By.ID, "cell_num")
     print("cell num", cellphone.get_attribute('value'))
-    count += 1
-print("count:", count)
+    patientDict["cellphone"] = cellphone.get_attribute('value')
 
+    closeBtn = driver.find_element(
+        By.XPATH, "//a[@onclick='javascript:closecovid()']")
+    closeBtn.click()
 
-# parent = appointment.find_element(By.XPATH, "./..")
-# parent.click()
+    patients.append(patientDict)
 
+'''
 
-# js = f"Javascript:showAppointmentsforDayNavigator({'2/7/2023'});"
-# driver.execute_script(js)
-# driver.execute_async_script()
+# driver.get("https://www.google.com")
+# driver.get("https://voice.google.com/")
+# time.sleep(2)
+# signUp = driver.find_element(By.XPATH, "//a[contains(@href, 'sign')]")
+# signUp.click()
+# driver.find_element(By.ID, "identifierId").send_keys(gvoice.USER)
+# time.sleep(3)
+# driver.find_elements(By.XPATH, "//button")[2].click()
+# time.sleep(3)
 
-# app_span = driver.find_element(By.XPATH, "//span[contains(@id, ')
-# wait(driver, timeout=5).until(EC.presence_of_element_located(
-#     (By.XPATH, f"//*[contains(@href, {DATE})]"))
-# )
-# appointment = driver.find_element(
-#     By.XPATH, f"//*[contains(@href, {DATE})]").click()
+with SB(uc=True) as driver:
+    driver.get("https://accounts.google.com/o/oauth2/v2/auth/oauthchooseaccount?redirect_uri=https%3A%2F%2Fdevelopers.google.com%2Foauthplayground&prompt=consent&response_type=code&client_id=407408718192.apps.googleusercontent.com&scope=email&access_type=offline&flowName=GeneralOAuthFlow")
+    driver.type("#identifierId", gvoice.USER)
+    driver.click("#identifierNext > div > button")
 
-# wait(driver, timeout=10).until(EC.presence_of_element_located(
-#     (By.XPATH, f"//*[contains(@href, {DATE})]"))
-# )
-# driver.find_element(
-#     By.XPATH, f"//*[contains(@href, {DATE})]").click()
+    driver.type(
+        "#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input", gvoice.PASSWORD)
+    driver.click("#passwordNext > div > button")
+    driver.get("https://voice.google.com/")
+    time.sleep(1)
+    driver.click("/html/body/div[2]/div[3]/div/button/span")
+    time.sleep(1)
+    driver.click("/html/body/div[2]/div[3]/div/div/button[3]/span")
+    time.sleep(1)
+    driver.click(
+        "/html/body/div[1]/div[2]/gv-side-panel/mat-sidenav-container/mat-sidenav-content/div/div[2]/gv-side-nav/div/div/gmat-nav-list/a[2]/div")
+    driver.click(
+        "/html/body/div[1]/div[2]/gv-side-panel/mat-sidenav-container/mat-sidenav-content/div/div[2]/div/gv-messaging-view/div/div/md-content/div/div/div")
+    # driver.type("//*[@id='input_0']", "test-number")
+    driver.send_keys("#input_0", "test-number")
+    driver.type("#input_1", "test-message")
 
-
-# //*[contains(@href,"AppointmentNew('2/7/2023')")]
-# //*[contains(@href,"AppointmentNew('2/7/2023')")]
-# retry the action
-# for appointment in appointments:
-#     if DATE in appointment.get_attribute("href"):
-#         print(f"Found {DATE}'s appointment")
-#         driver.execute_script("arguments[0].click();", appointment)
-#     else:
-#         print("not found")
-# find_appointment_by_date(appointments, DATE)
-
-# time.sleep(5)
-# driver.close()
+    time.sleep(100)
+    # driver.save_screenshot("test.png")
