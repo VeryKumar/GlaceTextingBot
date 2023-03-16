@@ -2,6 +2,9 @@
 config.py
 gvoice.py
 
+# Ignore dummy/testing files
+dummyPtArr.py
+
 # Ignore cashed files
 __pycache__/
 downloaded_files/driver_fixing.lock
