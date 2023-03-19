@@ -11,7 +11,10 @@ import time
 import config
 import gvoice
 # Set appiontment date
-DATE = '3/24/2023'
+DATE = '3/27/2023'
+
+MODE = 'ACTIVE'
+# MODE = 'TEST'
 
 # Options for headless mode
 
@@ -21,7 +24,7 @@ DATE = '3/24/2023'
 
 # Initialize driver
 url = "https://asp.glaceemr.com/Glace/jsp/loginPage.jsp"
-driver = webdriver.Chrome(ChromeDriverManager().install())
+driver = webdriver.Chrome()
 driver.get(url)
 
 # Patients Array
@@ -101,10 +104,10 @@ calClick = driver.find_element(
     By.CSS_SELECTOR, "a[title*='Appointments']").click()
 time.sleep(3)
 wait(driver, timeout=10).until(EC.presence_of_element_located(
-    (By.CSS_SELECTOR, f"a[href*='3/24/2023']")))
+    (By.CSS_SELECTOR, f"a[href*='{DATE}']")))
 
 appointment = driver.find_element(
-    By.CSS_SELECTOR, f"a[href*='3/24/2023']")
+    By.CSS_SELECTOR, f"a[href*='{DATE}']")
 time.sleep(8)
 action.click(appointment).perform()
 time.sleep(8)
@@ -177,9 +180,6 @@ with SB(uc=True) as gdriver:
     gdriver.click(newMessageBtnPath)
     print('clicked on elem 2')
 
-    patients.pop(0)
-    patients.pop(0)
-    patients.pop(0)
     # Send message
     for patient in patients:
 
@@ -187,14 +187,15 @@ with SB(uc=True) as gdriver:
 
         textInputXPath, numberInputXPath = "//textarea", "//input[@gv-test-id='recipient-picker-input']"
 
-        gdriver.type(numberInputXPath, 0000000000)
-
-        # if patient["cellphone"] != "" and patient["cellphone"] != "0000000000":
-        #     gdriver.type(
-        #         numberInputXPath, patient["cellphone"] + Keys.RETURN)
-        # else:
-        #     gdriver.type(
-        #         numberInputXPath, patient["homephone"] + Keys.RETURN)
+        if MODE == "TEST":
+            gdriver.type(numberInputXPath, 0000000000)
+        if MODE == "ACTIVE":
+            if patient["cellphone"] != "" and patient["cellphone"] != "0000000000":
+                gdriver.type(
+                    numberInputXPath, patient["cellphone"] + Keys.RETURN)
+            else:
+                gdriver.type(
+                    numberInputXPath, patient["homephone"] + Keys.RETURN)
 
         gdriver.type(textInputXPath, txt)
         time.sleep(1)
