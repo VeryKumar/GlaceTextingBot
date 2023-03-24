@@ -10,8 +10,11 @@ from seleniumbase import SB
 import time
 import config
 import gvoice
-# Set appiontment date
-DATE = '3/27/2023'
+# Set appointment date
+
+PeskyURL = "https://developers.google.com/oauthplayground/?code=4%2F0AWtgzh6e6jUrI8Lw89_8hCOD-80-mXasq_GkO_jeQmxoMxd8jfys7fFnkPzgF6dZw-z8MA&scope=email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=consent"
+skip_number = 0
+DATE = '3/31/2023'
 
 MODE = 'ACTIVE'
 # MODE = 'TEST'
@@ -51,8 +54,8 @@ def find_appointment_by_date(appointments, DATE):
         else:
             print("not found")
 
-# Login to portal
 
+# Login to portal
 
 wait(driver, 10).until(EC.presence_of_element_located((By.ID, "txtUserName")))
 userInput = driver.find_element(By.ID, "txtUserName")
@@ -151,8 +154,7 @@ for patient in patientsAtDate:
 
 
 # Generate text message
-
-
+patients = patients[skip_number:]
 with SB(uc=True) as gdriver:
 
     # Initialize driver + Login
@@ -163,12 +165,14 @@ with SB(uc=True) as gdriver:
     gdriver.type(
         "#password > div.aCsJod.oJeWuf > div > div.Xb9hP > input", gvoice.PASSWORD)
     gdriver.click("#passwordNext > div > button")
-
+    print('made it past login')
     # Navigate to Google Voice
 
     gdriver.get("https://voice.google.com/")
+    print('made it to voice.google.com')
     time.sleep(1)
     personalUseBtnPath = "/html/body/div[2]/div[3]/div/button/span"
+    gdriver.wait_for_element(personalUseBtnPath, timeout=100)
     gdriver.click(personalUseBtnPath)
     time.sleep(1)
     webBtnPath = "/html/body/div[2]/div[3]/div/div/button[3]/span"
@@ -182,6 +186,7 @@ with SB(uc=True) as gdriver:
 
     # Send message
     for patient in patients:
+        print(f"currently sending txt to {patient['name']}")
 
         txt = f"Hello {patient['name']}, this is Dr.Kumar's office letting you know that you have an appointment on {DATE} at {patient['time']}. You can text Y to confirm your appointment. Thank you!"
 
