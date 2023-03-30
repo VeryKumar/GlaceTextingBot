@@ -4,7 +4,11 @@ gvoice.py
 
 # Ignore dummy/testing files
 dummyPtArr.py
+voice.py
+test.py
+dateTime.py
 
 # Ignore cashed files
 __pycache__/
 downloaded_files/driver_fixing.lock
+
