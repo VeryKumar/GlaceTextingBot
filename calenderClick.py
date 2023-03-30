@@ -4,17 +4,22 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from seleniumbase import SB
+from datetime import datetime
 import time
 import config
 import gvoice
 # Set appointment date
 
 PeskyURL = "https://developers.google.com/oauthplayground/?code=4%2F0AWtgzh6e6jUrI8Lw89_8hCOD-80-mXasq_GkO_jeQmxoMxd8jfys7fFnkPzgF6dZw-z8MA&scope=email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=consent"
-skip_number = 0
-DATE = '3/31/2023'
+skipXPatients = 0
+
+DATE = '4/10/2023'
+TODAY_OBJ = datetime.now()
+TODAY = f"{TODAY_OBJ.month}/{TODAY_OBJ.day}/{TODAY_OBJ.year}"
+
 
 MODE = 'ACTIVE'
 # MODE = 'TEST'
@@ -24,10 +29,14 @@ MODE = 'ACTIVE'
 # options = webdriver.ChromeOptions()
 # options.add_argument("--headless=new")
 
+# Options for ignoring prompts
+
+options = webdriver.ChromeOptions()
+options.set_capability("unhandledPromptBehavior", "accept")
 
 # Initialize driver
 url = "https://asp.glaceemr.com/Glace/jsp/loginPage.jsp"
-driver = webdriver.Chrome()
+driver = webdriver.Chrome(options=options)
 driver.get(url)
 
 # Patients Array
@@ -55,7 +64,16 @@ def find_appointment_by_date(appointments, DATE):
             print("not found")
 
 
+# Check if element exists and handle no such element exception
+
+def element_exists(id):
+    try:
+        driver.find_element(By.ID, id)
+    except NoSuchElementException:
+        return False
+    return True
 # Login to portal
+
 
 wait(driver, 10).until(EC.presence_of_element_located((By.ID, "txtUserName")))
 userInput = driver.find_element(By.ID, "txtUserName")
@@ -68,9 +86,12 @@ accountInput.send_keys(config.ACCOUNT_ID)
 submit = driver.find_element(By.ID, "SubmitButton")
 submit.click()
 
-time.sleep(1)
+time.sleep(5)
 
 # Portal navigation
+wait(driver, 10).until(EC.presence_of_element_located((By.XPATH,
+                                                       "/html/body/div[6]/div/div[1]/div/div/div[1]/div/div/div[3]/div/div[2]/div[1]/button")))
+
 acknowledgeBtn = driver.find_element(
     By.XPATH, "/html/body/div[6]/div/div[1]/div/div/div[1]/div/div/div[3]/div/div[2]/div[1]/button")
 
@@ -89,23 +110,29 @@ calendarBtn = driver.find_element(
     By.XPATH, "/html/body/div[18]/div/table/tbody/tr[1]")
 calendarBtn.click()
 
-# appointmentUrl = f"javascript:todaysAppointmentNew({DATE});"
-# driver.find_element(By.XPATH, '//a[@href="'+appointmentUrl+'"]').click()
-# print(appointmentUrl)
-# driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
-
 iframe = wait(driver, timeout=10).until(
     EC.frame_to_be_available_and_switch_to_it((By.ID, "MainWindow")))
 
-# appointments = wait(driver, timeout=10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[title*='Appointments']")))
-# appointments = driver.find_elements(
-#     By.CSS_SELECTOR, "a[title*='Appointments']")
-# re-locate the element or refresh the page
 wait(driver, timeout=10).until(
     EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "a[title*='Appointments']")))
 calClick = driver.find_element(
     By.CSS_SELECTOR, "a[title*='Appointments']").click()
 time.sleep(3)
+
+# Navigate to the appropriate month
+
+if DATE[0] != TODAY_OBJ.month:
+    monthButtonClicks = int(DATE[0]) - TODAY_OBJ.month
+    print(monthButtonClicks)
+    for i in range(monthButtonClicks):
+        wait(driver, timeout=10).until(EC.presence_of_element_located(
+            (By.CSS_SELECTOR, "tr.calbutton:nth-child(3) > td:nth-child(3) > a:nth-child(1) > span:nth-child(1)")))
+        nextMonthBtn = driver.find_element(
+            By.CSS_SELECTOR, "tr.calbutton:nth-child(3) > td:nth-child(3) > a:nth-child(1) > span:nth-child(1)"
+        )
+        nextMonthBtn.click()
+        time.sleep(1)
+
 wait(driver, timeout=10).until(EC.presence_of_element_located(
     (By.CSS_SELECTOR, f"a[href*='{DATE}']")))
 
@@ -122,6 +149,13 @@ wait(driver, timeout=10).until(EC.presence_of_element_located(
 patientsAtDate = driver.find_elements(
     By.XPATH, "//span[contains(@id, 'appt')]")
 
+patientFraction = driver.find_element(
+    By.XPATH, "//div[@id='slotsHeader']/table/tbody/tr/td[2]/div/div/a")
+print(patientFraction.text)
+
+amTimeSlot = driver.find_element(
+    By.ID, "stTime_390")
+
 count = 0
 
 for patient in patientsAtDate:
@@ -131,8 +165,8 @@ for patient in patientsAtDate:
     time.sleep(3)
 
     patientName = driver.find_element(By.ID, "pat_name")
-    patientDict["name"] = patientName.get_attribute('value')
     print("name", patientName.get_attribute('value'))
+    patientDict["name"] = patientName.get_attribute('value')
 
     appointmentTme = driver.find_element(By.ID, "time")
     print("time", appointmentTme.get_attribute('value'))
@@ -152,9 +186,21 @@ for patient in patientsAtDate:
 
     patients.append(patientDict)
 
+# Report this date as completed in EMR
+action.double_click(amTimeSlot).perform()
+patientName = driver.find_element(By.ID, "pat_name")
+print(f"TEXTED {TODAY}")
+patientName.send_keys(f"TEXTED {TODAY}")
+bookApptBtn = None
+if element_exists("Update"):
+    bookApptBtn = driver.find_element(By.ID, "Update")
+else:
+    bookApptBtn = driver.find_element(By.ID, "Save")
+bookApptBtn.click()
+driver.close()
 
 # Generate text message
-patients = patients[skip_number:]
+patients = patients[skipXPatients:]
 with SB(uc=True) as gdriver:
 
     # Initialize driver + Login
