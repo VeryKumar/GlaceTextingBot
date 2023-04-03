@@ -11,18 +11,19 @@ from datetime import datetime
 import time
 import config
 import gvoice
+from dummyPtArr import patients
 # Set appointment date
 
 PeskyURL = "https://developers.google.com/oauthplayground/?code=4%2F0AWtgzh6e6jUrI8Lw89_8hCOD-80-mXasq_GkO_jeQmxoMxd8jfys7fFnkPzgF6dZw-z8MA&scope=email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=consent"
 skipXPatients = 0
 
-DATE = '4/10/2023'
+DATE = '5/29/2023'
 TODAY_OBJ = datetime.now()
 TODAY = f"{TODAY_OBJ.month}/{TODAY_OBJ.day}/{TODAY_OBJ.year}"
 
 
-MODE = 'ACTIVE'
-# MODE = 'TEST'
+# MODE = 'ACTIVE'
+MODE = 'TEST'
 
 # Options for headless mode
 
@@ -44,6 +45,36 @@ driver.get(url)
 patients = []
 
 # Helper methods
+
+
+def textOfficePhone(MODE, TODAY):
+    patient = {
+        "cellphone": "4404763770",
+    }
+
+    txt = f"{TODAY}'s patients have been texted"
+
+    textInputXPath, numberInputXPath = "//textarea", "//input[@gv-test-id='recipient-picker-input']"
+
+    if MODE == "TEST":
+        gdriver.type(numberInputXPath, 0000000000)
+    if MODE == "ACTIVE":
+        if patient["cellphone"] != "" and patient["cellphone"] != "0000000000":
+            gdriver.type(
+                numberInputXPath, patient["cellphone"] + Keys.RETURN)
+        else:
+            gdriver.type(
+                numberInputXPath, patient["homephone"] + Keys.RETURN)
+
+    gdriver.type(textInputXPath, txt)
+    time.sleep(1)
+    sendBtnPath = "#ib2"
+    gdriver.click(sendBtnPath)
+    print('clicked send')
+    time.sleep(1)
+    newMessageButtonPath = "//div[@gv-id='send-new-message']"
+    gdriver.click(newMessageButtonPath)
+    print('clicked new message')
 
 # Explicit Wait
 
@@ -147,7 +178,9 @@ wait(driver, timeout=10).until(EC.presence_of_element_located(
     (By.XPATH, "//span[contains(@id, 'appt')]")))
 
 patientsAtDate = driver.find_elements(
-    By.XPATH, "//span[contains(@id, 'appt')]")
+    By.XPATH,  "//span[contains(@id, 'appt')]"
+)
+
 
 patientFraction = driver.find_element(
     By.XPATH, "//div[@id='slotsHeader']/table/tbody/tr/td[2]/div/div/a")
@@ -161,36 +194,51 @@ count = 0
 for patient in patientsAtDate:
     patientDict = {}
 
-    action.double_click(patient).perform()
-    time.sleep(3)
+    # Detect if patient is requested status or left message status and scrape
+    patientDiv = patient.find_element(By.XPATH, ".//div")
+    patientTable = patientDiv.find_element(By.XPATH, ".//table")
+    if "background-color: rgb(206, 190, 190);" in patientTable.get_attribute("style") or "background-color: lightyellow;" in patientTable.get_attribute("style"):
+        action.double_click(patient).perform()
+        time.sleep(3)
 
-    patientName = driver.find_element(By.ID, "pat_name")
-    print("name", patientName.get_attribute('value'))
-    patientDict["name"] = patientName.get_attribute('value')
+        patientName = driver.find_element(By.ID, "pat_name")
+        print("name", patientName.get_attribute('value'))
+        patientDict["name"] = patientName.get_attribute('value')
 
-    appointmentTme = driver.find_element(By.ID, "time")
-    print("time", appointmentTme.get_attribute('value'))
-    patientDict["time"] = appointmentTme.get_attribute('value')
+        appointmentTme = driver.find_element(By.ID, "time")
+        print("time", appointmentTme.get_attribute('value'))
+        patientDict["time"] = appointmentTme.get_attribute('value')
 
-    homephone = driver.find_element(By.ID, "phone_num")
-    print("home num", homephone.get_attribute('value'))
-    patientDict["homephone"] = homephone.get_attribute('value')
+        homephone = driver.find_element(By.ID, "phone_num")
+        print("home num", homephone.get_attribute('value'))
+        patientDict["homephone"] = homephone.get_attribute('value')
 
-    cellphone = driver.find_element(By.ID, "cell_num")
-    print("cell num", cellphone.get_attribute('value'))
-    patientDict["cellphone"] = cellphone.get_attribute('value')
+        cellphone = driver.find_element(By.ID, "cell_num")
+        print("cell num", cellphone.get_attribute('value'))
+        patientDict["cellphone"] = cellphone.get_attribute('value')
 
-    closeBtn = driver.find_element(
-        By.XPATH, "//a[@onclick='javascript:closecovid()']")
-    closeBtn.click()
+        closeBtn = driver.find_element(
+            By.XPATH, "//a[@onclick='javascript:closecovid()']")
+        closeBtn.click()
 
-    patients.append(patientDict)
+        patients.append(patientDict)
 
 # Report this date as completed in EMR
 action.double_click(amTimeSlot).perform()
-patientName = driver.find_element(By.ID, "pat_name")
+time.sleep(1)
+
+patientNameInput = driver.find_element(By.ID, "pat_name")
 print(f"TEXTED {TODAY}")
-patientName.send_keys(f"TEXTED {TODAY}")
+
+action.key_down(Keys.COMMAND).send_keys("a").key_up(Keys.COMMAND).perform()
+patientNameInput.send_keys(Keys.BACKSPACE)
+
+patientNameInput.send_keys(f"TEXTED {TODAY}")
+
+notesInput = driver.find_element(By.ID, "appDesc")
+notesInput.clear()
+notesInput.send_keys(f"Updated {TODAY}")
+
 bookApptBtn = None
 if element_exists("Update"):
     bookApptBtn = driver.find_element(By.ID, "Update")
@@ -218,13 +266,14 @@ with SB(uc=True) as gdriver:
     print('made it to voice.google.com')
     time.sleep(1)
     personalUseBtnPath = "/html/body/div[2]/div[3]/div/button/span"
-    gdriver.wait_for_element(personalUseBtnPath, timeout=100)
+    gdriver.wait_for_element(personalUseBtnPath, timeout=1000)
     gdriver.click(personalUseBtnPath)
     time.sleep(1)
     webBtnPath = "/html/body/div[2]/div[3]/div/div/button[3]/span"
     gdriver.click(webBtnPath)
     time.sleep(1)
     messageBtnPath = "/html/body/div[1]/div[2]/gv-side-panel/mat-sidenav-container/mat-sidenav-content/div/div[2]/gv-side-nav/div/div/gmat-nav-list/a[2]/div"
+    gdriver.wait_for_element(messageBtnPath, timeout=1000)
     gdriver.click(messageBtnPath)
     newMessageBtnPath = "/html/body/div[1]/div[2]/gv-side-panel/mat-sidenav-container/mat-sidenav-content/div/div[2]/div/gv-messaging-view/div/div/md-content/div/div/div"
     gdriver.click(newMessageBtnPath)
@@ -253,23 +302,9 @@ with SB(uc=True) as gdriver:
         sendBtnPath = "#ib2"
         gdriver.click(sendBtnPath)
         print('clicked send')
-        # close = "//*[@id='mat-chip-list-0']/div/gmat-input-chip/mat-icon"
-        # gdriver.click(close)
         time.sleep(1)
         newMessageButtonPath = "//div[@gv-id='send-new-message']"
         gdriver.click(newMessageButtonPath)
         print('clicked new message')
-        # action = ActionChains(driver)
-        # newMessageButton = driver.find_element_by_xpath(
-        #     newMessageButtonPath)
-        # action.move_to_element(newMessageButton).perform()
-
-    # gdriver.type("#input_1", "test-message")
-    # # print(patients)
-    # gdriver.type("#input_0", "7164744839" + Keys.RETURN)
-    # time.sleep(1)
-    # sendBtnPath = "#ib2"
-    # # gdriver.click(sendBtnPath)
-    # close = "//*[@id='mat-chip-list-0']/div/gmat-input-chip/mat-icon"
-    # gdriver.click(close)
+    textOfficePhone(MODE, DATE)
     time.sleep(100)
