@@ -14,6 +14,10 @@ import dummyPtArr as patients
 
 DATE = '3/20/2023'
 
+url = "https://asp.glaceemr.com/Glace/jsp/loginPage.jsp"
+driver = webdriver.Chrome((
+    ChromeDriverManager().install()))
+driver.get(url)
 
 with SB(uc=True) as gdriver:
 
@@ -41,7 +45,7 @@ with SB(uc=True) as gdriver:
     newMessageBtnPath = "/html/body/div[1]/div[2]/gv-side-panel/mat-sidenav-container/mat-sidenav-content/div/div[2]/div/gv-messaging-view/div/div/md-content/div/div/div"
     gdriver.click(newMessageBtnPath)
     print('clicked on elem 2')
-
+    time.sleep(100)
     # Send message
     for patient in patients.patients:
 
